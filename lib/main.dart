@@ -3,7 +3,6 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 
 import 'data/repositories/post_repository.dart';
-import 'data/repositories/user_repository.dart';
 import 'routing/router.dart';
 import 'ui/core/theme.dart';
 
@@ -22,7 +21,6 @@ class InkflowApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<PostRepository>(create: (_) => MockPostRepository()),
-        Provider(create: (_) => UserRepository()),
       ],
       child: MaterialApp.router(
         title: 'Inkflow',

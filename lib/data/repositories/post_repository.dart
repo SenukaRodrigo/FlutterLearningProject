@@ -29,6 +29,9 @@ abstract class PostRepository {
     required String body,
     List<String> tags,
   });
+
+  /// The signed-in author (also used as the author of new posts and comments).
+  Author get currentAuthor;
 }
 
 /// In-memory [PostRepository] with seeded data and simulated network latency.
@@ -240,6 +243,9 @@ class MockPostRepository implements PostRepository {
     bio: 'Writing about Flutter, design, and the craft of shipping software.',
     avatarUrl: 'https://picsum.photos/seed/inkflow-avatar/200/200',
   );
+
+  @override
+  Author get currentAuthor => _me;
 
   /// Simulated network latency of 250–500ms.
   Future<void> _delay() =>
