@@ -133,7 +133,7 @@ class MockPostRepository implements PostRepository {
             '```\n\n'
             'Use `context.read` for one-off actions and `context.watch` (or a '
             '`Selector`) when the widget should rebuild on change.',
-        author: _margaret,
+        author: _me,
         tags: const ['flutter', 'state-management', 'provider'],
         coverImageUrl: 'https://picsum.photos/seed/inkflow-provider/800/400',
         createdAt: DateTime(2026, 7, 5, 11, 15),
@@ -169,7 +169,7 @@ class MockPostRepository implements PostRepository {
             '3. **Integration tests** for full user flows\n\n'
             'Fake your data layer behind an interface and most of your app '
             'becomes trivially testable.',
-        author: _grace,
+        author: _me,
         tags: const ['flutter', 'testing'],
         coverImageUrl: null,
         createdAt: DateTime(2026, 7, 7, 9, 40),
