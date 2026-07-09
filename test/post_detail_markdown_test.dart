@@ -12,15 +12,17 @@ void main() {
   testWidgets('renders post body as Markdown', (WidgetTester tester) async {
     await tester.pumpWidget(
       Provider<PostRepository>(
-        create: (_) => PostRepository(),
+        create: (_) => MockPostRepository(),
         child: const MaterialApp(
           home: PostDetailScreen(postId: '1'),
         ),
       ),
     );
 
-    // Let the repository's simulated async load resolve.
-    await tester.pump(const Duration(milliseconds: 400));
+    // The screen loads the post and its comments in sequence (each 250-500ms
+    // of simulated latency), so advance past both before asserting.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
 
     // The Markdown widget is present and the H1 from the post body rendered.
     expect(find.byType(MarkdownBody), findsOneWidget);

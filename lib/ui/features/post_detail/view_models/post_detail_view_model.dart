@@ -18,15 +18,39 @@ class PostDetailViewModel extends ChangeNotifier {
   Post? _post;
   Post? get post => _post;
 
+  List<Comment> _comments = const [];
+  List<Comment> get comments => _comments;
+
   bool get notFound => !_isLoading && _post == null;
 
   Future<void> load() async {
     _isLoading = true;
     notifyListeners();
 
-    _post = await _repository.fetchById(_postId);
+    _post = await _repository.fetchPost(_postId);
+    if (_post != null) {
+      _comments = await _repository.fetchComments(_postId);
+    }
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Optimistically toggles the like, then reconciles with the repository.
+  Future<void> toggleLike() async {
+    final current = _post;
+    if (current == null) return;
+    _post = await _repository.toggleLike(current.id);
+    notifyListeners();
+  }
+
+  Future<void> addComment(String text) async {
+    final current = _post;
+    if (current == null || text.trim().isEmpty) return;
+
+    final comment = await _repository.addComment(current.id, text.trim());
+    _comments = [..._comments, comment];
+    _post = current.copyWith(commentCount: current.commentCount + 1);
     notifyListeners();
   }
 }

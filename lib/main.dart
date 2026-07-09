@@ -21,7 +21,7 @@ class InkflowApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider(create: (_) => PostRepository()),
+        Provider<PostRepository>(create: (_) => MockPostRepository()),
         Provider(create: (_) => UserRepository()),
       ],
       child: MaterialApp.router(

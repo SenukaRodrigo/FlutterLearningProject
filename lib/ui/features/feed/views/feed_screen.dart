@@ -46,25 +46,27 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final coverUrl = post.coverImageUrl;
     return Card(
       child: InkWell(
         onTap: () => context.push('/post/${post.id}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 2,
-              child: CachedNetworkImage(
-                imageUrl: post.coverImageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const ColoredBox(
-                  color: Colors.black12,
-                  child: Center(child: CircularProgressIndicator()),
+            if (coverUrl != null)
+              AspectRatio(
+                aspectRatio: 2,
+                child: CachedNetworkImage(
+                  imageUrl: coverUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => const ColoredBox(
+                    color: Colors.black12,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (context, url, error) =>
+                      const ColoredBox(color: Colors.black12),
                 ),
-                errorWidget: (context, url, error) =>
-                    const ColoredBox(color: Colors.black12),
               ),
-            ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -78,13 +80,52 @@ class _PostCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (post.tags.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final tag in post.tags)
+                          Chip(
+                            label: Text('#$tag'),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Text(
-                    '${post.author}  ·  ${post.formattedDate}  ·  '
+                    '${post.author.displayName}  ·  ${post.formattedDate}  ·  '
                     '${post.readMinutes} min read',
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        post.likedByMe
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        size: 16,
+                        color: post.likedByMe
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text('${post.likeCount}',
+                          style: theme.textTheme.labelMedium),
+                      const SizedBox(width: 16),
+                      Icon(Icons.mode_comment_outlined,
+                          size: 16, color: theme.colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Text('${post.commentCount}',
+                          style: theme.textTheme.labelMedium),
+                    ],
                   ),
                 ],
               ),
