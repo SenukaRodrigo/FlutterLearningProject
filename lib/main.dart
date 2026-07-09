@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'data/repositories/post_repository.dart';
 import 'routing/router.dart';
 import 'ui/core/theme.dart';
+import 'ui/features/feed/view_models/feed_view_model.dart';
 
 void main() {
   // Clean, hash-free URLs on the web so deep links look like /post/1.
@@ -21,6 +22,11 @@ class InkflowApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<PostRepository>(create: (_) => MockPostRepository()),
+        // App-scoped so the feed's filters and scroll state survive switching
+        // between the bottom-nav tabs.
+        ChangeNotifierProvider<FeedViewModel>(
+          create: (context) => FeedViewModel(context.read<PostRepository>()),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Inkflow',

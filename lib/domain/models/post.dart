@@ -84,6 +84,9 @@ class Post {
   /// A short plain-text teaser derived from the Markdown [body].
   String get excerpt {
     final plain = body
+        // A body conventionally opens with its own title as an H1; repeating it
+        // under the title on a feed card wastes both excerpt lines.
+        .replaceFirst(RegExp(r'^\s*#{1,6}[^\n]*\n'), '')
         .replaceAll(RegExp(r'```[\s\S]*?```'), ' ') // fenced code blocks
         .replaceAll(RegExp(r'[#>*_`~\-\[\]()]'), ' ') // markdown tokens
         .replaceAll(RegExp(r'\s+'), ' ')
@@ -101,6 +104,9 @@ class Post {
 
   /// Human-friendly created date, e.g. "July 7, 2026".
   String get formattedDate => DateFormat.yMMMMd().format(createdAt);
+
+  /// Compact created date for dense surfaces like feed cards, e.g. "Jul 7".
+  String get shortDate => DateFormat.MMMd().format(createdAt);
 
   Post copyWith({
     String? id,

@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(const InkflowApp());
 
     // The feed app bar renders on the first frame.
-    expect(find.text('Inkflow'), findsOneWidget);
+    expect(find.text('InkFlow'), findsOneWidget);
 
     // Let the async feed load settle without throwing.
     await tester.pump(const Duration(milliseconds: 500));
