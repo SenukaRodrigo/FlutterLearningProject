@@ -3,17 +3,22 @@ import 'package:flutter/foundation.dart';
 import '../../../../data/repositories/post_repository.dart';
 import '../../../../domain/models/post.dart';
 
-/// Presentation state for a single post, loaded by id (deep-linkable).
+/// Lifecycle of a single post's data.
+enum PostDetailStatus { loading, ready, notFound, error }
+
+/// Presentation state for one post, loaded by id (deep-linkable).
+///
+/// Created per route, so navigating to a different post gets a fresh instance.
 class PostDetailViewModel extends ChangeNotifier {
-  PostDetailViewModel(this._repository, this._postId) {
+  PostDetailViewModel(this._repository, this.postId) {
     load();
   }
 
   final PostRepository _repository;
-  final String _postId;
+  final String postId;
 
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  PostDetailStatus _status = PostDetailStatus.loading;
+  PostDetailStatus get status => _status;
 
   Post? _post;
   Post? get post => _post;
@@ -21,36 +26,77 @@ class PostDetailViewModel extends ChangeNotifier {
   List<Comment> _comments = const [];
   List<Comment> get comments => _comments;
 
-  bool get notFound => !_isLoading && _post == null;
+  /// True while a comment is in flight, so the composer can disable its button.
+  bool _isSendingComment = false;
+  bool get isSendingComment => _isSendingComment;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
 
   Future<void> load() async {
-    _isLoading = true;
+    _status = PostDetailStatus.loading;
+    _errorMessage = null;
     notifyListeners();
 
-    _post = await _repository.fetchPost(_postId);
-    if (_post != null) {
-      _comments = await _repository.fetchComments(_postId);
+    try {
+      final post = await _repository.fetchPost(postId);
+      if (post == null) {
+        _status = PostDetailStatus.notFound;
+        notifyListeners();
+        return;
+      }
+      _post = post;
+      _comments = await _repository.fetchComments(postId);
+      _status = PostDetailStatus.ready;
+    } catch (_) {
+      _errorMessage = "Couldn't load this post.";
+      _status = PostDetailStatus.error;
     }
-
-    _isLoading = false;
     notifyListeners();
   }
 
-  /// Optimistically toggles the like, then reconciles with the repository.
+  /// Flips the like immediately, then reconciles with the repository. The
+  /// repository broadcasts the change, so the feed behind this screen updates
+  /// its own copy of the post.
   Future<void> toggleLike() async {
     final current = _post;
     if (current == null) return;
-    _post = await _repository.toggleLike(current.id);
+
+    _post = current.copyWith(
+      likedByMe: !current.likedByMe,
+      likeCount: current.likeCount + (current.likedByMe ? -1 : 1),
+    );
+    notifyListeners();
+
+    try {
+      _post = await _repository.toggleLike(current.id);
+    } catch (_) {
+      _post = current;
+    }
     notifyListeners();
   }
 
-  Future<void> addComment(String text) async {
+  /// Appends [text] as a comment. Returns whether it was accepted, so the
+  /// composer only clears its field on success.
+  Future<bool> addComment(String text) async {
     final current = _post;
-    if (current == null || text.trim().isEmpty) return;
+    final trimmed = text.trim();
+    if (current == null || trimmed.isEmpty || _isSendingComment) return false;
 
-    final comment = await _repository.addComment(current.id, text.trim());
-    _comments = [..._comments, comment];
-    _post = current.copyWith(commentCount: current.commentCount + 1);
+    _isSendingComment = true;
     notifyListeners();
+
+    try {
+      final comment = await _repository.addComment(current.id, trimmed);
+      _comments = [..._comments, comment];
+      _post = current.copyWith(commentCount: current.commentCount + 1);
+      return true;
+    } catch (_) {
+      _errorMessage = "Couldn't post your comment.";
+      return false;
+    } finally {
+      _isSendingComment = false;
+      notifyListeners();
+    }
   }
 }

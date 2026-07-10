@@ -6,15 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:inkflow/data/repositories/post_repository.dart';
+import 'package:inkflow/ui/features/post_detail/view_models/post_detail_view_model.dart';
 import 'package:inkflow/ui/features/post_detail/views/post_detail_screen.dart';
 
 void main() {
   testWidgets('renders post body as Markdown', (WidgetTester tester) async {
     await tester.pumpWidget(
-      Provider<PostRepository>(
-        create: (_) => MockPostRepository(),
+      ChangeNotifierProvider(
+        create: (_) => PostDetailViewModel(MockPostRepository(), '1'),
         child: const MaterialApp(
-          home: PostDetailScreen(postId: '1'),
+          home: PostDetailScreen(),
         ),
       ),
     );

@@ -17,12 +17,20 @@ Post _postWithBody(String body) => Post(
     );
 
 void main() {
-  test('excerpt drops a leading markdown heading', () {
+  test('a leading heading repeating the title is dropped', () {
     final post = _postWithBody(
       '# Designing with Material 3\n\nMaterial 3 leans on dynamic color.',
     );
 
+    expect(post.bodyWithoutLeadingTitle, 'Material 3 leans on dynamic color.');
     expect(post.excerpt, 'Material 3 leans on dynamic color.');
+  });
+
+  test('a leading heading that is not the title is kept', () {
+    final post = _postWithBody('## Why it matters\n\nBecause screens differ.');
+
+    expect(post.bodyWithoutLeadingTitle, '## Why it matters\n\nBecause screens differ.');
+    expect(post.excerpt, 'Why it matters Because screens differ.');
   });
 
   test('excerpt keeps body text when there is no leading heading', () {

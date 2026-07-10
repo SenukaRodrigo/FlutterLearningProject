@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../data/repositories/post_repository.dart';
 import '../ui/core/scaffold_with_nav_bar.dart';
 import '../ui/features/auth/views/login_screen.dart';
 import '../ui/features/editor/views/editor_screen.dart';
 import '../ui/features/feed/views/feed_screen.dart';
+import '../ui/features/post_detail/view_models/post_detail_view_model.dart';
 import '../ui/features/post_detail/views/post_detail_screen.dart';
 import '../ui/features/profile/views/profile_screen.dart';
 
@@ -56,8 +59,16 @@ final GoRouter router = GoRouter(
     ),
     GoRoute(
       path: '/post/:id',
-      builder: (context, state) =>
-          PostDetailScreen(postId: state.pathParameters['id']!),
+      builder: (context, state) => ChangeNotifierProvider(
+        // Keyed by id so navigating between posts builds a fresh view model
+        // rather than reusing the previous post's state.
+        key: ValueKey(state.pathParameters['id']),
+        create: (context) => PostDetailViewModel(
+          context.read<PostRepository>(),
+          state.pathParameters['id']!,
+        ),
+        child: const PostDetailScreen(),
+      ),
     ),
   ],
   errorBuilder: (context, state) => Scaffold(

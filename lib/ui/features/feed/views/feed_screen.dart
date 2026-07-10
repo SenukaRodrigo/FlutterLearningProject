@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../domain/models/post.dart';
+import '../../../core/author_avatar.dart';
 import '../view_models/feed_view_model.dart';
 
 /// Above this width the feed lays posts out as a grid instead of a single
@@ -315,7 +316,7 @@ class _AuthorLine extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        _Avatar(author: post.author),
+        AuthorAvatar(author: post.author),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -337,43 +338,6 @@ class _AuthorLine extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.author});
-
-  final Author author;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final initials = author.displayName.isEmpty ? '?' : author.displayName[0];
-    final fallback = ColoredBox(
-      color: theme.colorScheme.primaryContainer,
-      child: Center(
-        child: Text(
-          initials,
-          style: theme.textTheme.labelLarge
-              ?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-        ),
-      ),
-    );
-    final avatarUrl = author.avatarUrl;
-
-    return ClipOval(
-      child: SizedBox.square(
-        dimension: 36,
-        child: avatarUrl == null
-            ? fallback
-            : CachedNetworkImage(
-                imageUrl: avatarUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => fallback,
-                errorWidget: (context, url, error) => fallback,
-              ),
-      ),
     );
   }
 }

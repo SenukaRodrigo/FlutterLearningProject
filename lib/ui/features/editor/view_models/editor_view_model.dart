@@ -21,9 +21,14 @@ class EditorViewModel extends ChangeNotifier {
   bool _isPublishing = false;
   bool get isPublishing => _isPublishing;
 
-  /// Publishing is enabled once there is a title and some content.
-  bool get canPublish =>
-      _title.trim().isNotEmpty && _body.trim().isNotEmpty && !_isPublishing;
+  /// Why the post can't be published yet, or `null` once it is ready. The
+  /// editor surfaces this rather than disabling the button, so pressing
+  /// Publish on an empty draft explains itself.
+  String? get validationError {
+    if (_title.trim().isEmpty) return 'Add a title before publishing.';
+    if (_body.trim().isEmpty) return 'Write some content before publishing.';
+    return null;
+  }
 
   void updateTitle(String value) {
     _title = value;
@@ -47,9 +52,9 @@ class EditorViewModel extends ChangeNotifier {
       .toList();
 
   /// Creates the post via the repository and returns it, or `null` if the form
-  /// is not ready to publish.
+  /// is not ready to publish or the write failed.
   Future<Post?> publish() async {
-    if (!canPublish) return null;
+    if (validationError != null || _isPublishing) return null;
 
     _isPublishing = true;
     notifyListeners();
@@ -60,9 +65,19 @@ class EditorViewModel extends ChangeNotifier {
         body: _body.trim(),
         tags: _parseTags(),
       );
+    } catch (_) {
+      return null;
     } finally {
       _isPublishing = false;
       notifyListeners();
     }
+  }
+
+  /// Empties the draft after a successful publish.
+  void reset() {
+    _title = '';
+    _body = '';
+    _tagsInput = '';
+    notifyListeners();
   }
 }

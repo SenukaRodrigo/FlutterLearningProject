@@ -81,12 +81,22 @@ class Post {
   /// Whether the current user has liked this post.
   final bool likedByMe;
 
+  /// The [body] with its opening heading removed when that heading merely
+  /// repeats [title]. Screens render the title themselves, so keeping it would
+  /// show it twice. A leading heading that says something else is real content
+  /// and is left alone.
+  String get bodyWithoutLeadingTitle {
+    final match = RegExp(r'^\s*#{1,6}\s*([^\n]*?)\s*\n+').firstMatch(body);
+    if (match == null) return body;
+
+    final heading = match.group(1)!.toLowerCase();
+    if (heading != title.trim().toLowerCase()) return body;
+    return body.substring(match.end);
+  }
+
   /// A short plain-text teaser derived from the Markdown [body].
   String get excerpt {
-    final plain = body
-        // A body conventionally opens with its own title as an H1; repeating it
-        // under the title on a feed card wastes both excerpt lines.
-        .replaceFirst(RegExp(r'^\s*#{1,6}[^\n]*\n'), '')
+    final plain = bodyWithoutLeadingTitle
         .replaceAll(RegExp(r'```[\s\S]*?```'), ' ') // fenced code blocks
         .replaceAll(RegExp(r'[#>*_`~\-\[\]()]'), ' ') // markdown tokens
         .replaceAll(RegExp(r'\s+'), ' ')

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import '../../domain/models/post.dart';
@@ -32,6 +33,16 @@ abstract class PostRepository {
 
   /// The signed-in author (also used as the author of new posts and comments).
   Author get currentAuthor;
+
+  /// Emits a post whenever its stored state changes: a like toggled, a comment
+  /// added, or the post created. Screens holding their own copy of a post
+  /// listen here rather than re-fetching, so a like on the detail screen shows
+  /// up in the feed behind it. A Firestore snapshot listener would take the
+  /// same shape.
+  Stream<Post> get postChanges;
+
+  /// Releases resources held by the repository.
+  void dispose();
 }
 
 /// In-memory [PostRepository] with seeded data and simulated network latency.
@@ -200,8 +211,16 @@ class MockPostRepository implements PostRepository {
   late final List<Post> _posts;
   late final Map<String, List<Comment>> _comments;
 
+  final StreamController<Post> _postChanges = StreamController<Post>.broadcast();
+
   int _postSeq = 7;
   int _commentSeq = 6;
+
+  @override
+  Stream<Post> get postChanges => _postChanges.stream;
+
+  @override
+  void dispose() => _postChanges.close();
 
   // --- Seeded authors -------------------------------------------------------
 
@@ -305,6 +324,7 @@ class MockPostRepository implements PostRepository {
       likeCount: post.likeCount + (post.likedByMe ? -1 : 1),
     );
     _posts[index] = updated;
+    _postChanges.add(updated);
     return updated;
   }
 
@@ -325,6 +345,7 @@ class MockPostRepository implements PostRepository {
     _posts[index] = _posts[index].copyWith(
       commentCount: _posts[index].commentCount + 1,
     );
+    _postChanges.add(_posts[index]);
     return comment;
   }
 
@@ -344,6 +365,7 @@ class MockPostRepository implements PostRepository {
       createdAt: DateTime.now(),
     );
     _posts.insert(0, post);
+    _postChanges.add(post);
     return post;
   }
 }

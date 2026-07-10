@@ -21,7 +21,10 @@ class InkflowApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<PostRepository>(create: (_) => MockPostRepository()),
+        Provider<PostRepository>(
+          create: (_) => MockPostRepository(),
+          dispose: (_, repository) => repository.dispose(),
+        ),
         // App-scoped so the feed's filters and scroll state survive switching
         // between the bottom-nav tabs.
         ChangeNotifierProvider<FeedViewModel>(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../../data/repositories/post_repository.dart';
@@ -13,10 +15,12 @@ enum FeedStatus { loading, ready, error }
 /// same view model works against a paginated backend later.
 class FeedViewModel extends ChangeNotifier {
   FeedViewModel(this._repository) {
+    _postChanges = _repository.postChanges.listen(_onPostChanged);
     load();
   }
 
   final PostRepository _repository;
+  late final StreamSubscription<Post> _postChanges;
 
   /// Identifies the most recent fetch. Responses from superseded fetches are
   /// discarded, so a slow request can't overwrite a newer one's results —
@@ -102,6 +106,32 @@ class FeedViewModel extends ChangeNotifier {
       _replace(id, original);
     }
     notifyListeners();
+  }
+
+  /// Mirrors a change made elsewhere — a like or comment on the detail screen,
+  /// or a post published from the editor — into the list already on screen.
+  void _onPostChanged(Post post) {
+    final index = _posts.indexWhere((p) => p.id == post.id);
+    if (index != -1) {
+      _posts = [..._posts]..[index] = post;
+      notifyListeners();
+      return;
+    }
+
+    // A post we've never seen is newly created, and belongs at the top of the
+    // newest-first feed. With a filter applied it may not belong here at all,
+    // so leave it for the next fetch to place.
+    if (!hasFilters) {
+      _posts = [post, ..._posts];
+      _allTags = _tagsOf(_posts);
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _postChanges.cancel();
+    super.dispose();
   }
 
   Future<void> _fetch({required bool showSpinner}) async {
