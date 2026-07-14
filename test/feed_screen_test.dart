@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:inkflow/data/repositories/post_repository.dart';
+import 'package:inkflow/ui/core/theme_controller.dart';
 import 'package:inkflow/ui/features/feed/view_models/feed_view_model.dart';
 import 'package:inkflow/ui/features/feed/views/feed_screen.dart';
 
@@ -20,6 +21,7 @@ Widget _harness() {
       ChangeNotifierProvider<FeedViewModel>(
         create: (_) => FeedViewModel(repository),
       ),
+      ChangeNotifierProvider<ThemeController>(create: (_) => ThemeController()),
     ],
     child: const MaterialApp(home: FeedScreen()),
   );

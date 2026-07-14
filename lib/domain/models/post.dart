@@ -94,15 +94,43 @@ class Post {
     return body.substring(match.end);
   }
 
+  /// Longest excerpt before it is cut short with an ellipsis.
+  static const int _excerptMaxLength = 140;
+
   /// A short plain-text teaser derived from the Markdown [body].
+  ///
+  /// Unwraps inline markup rather than deleting the characters, so `` `x` ``
+  /// keeps its text and an identifier like `go_router` survives intact. This is
+  /// deliberately not a Markdown parser -- it only has to make a teaser read
+  /// like prose.
   String get excerpt {
     final plain = bodyWithoutLeadingTitle
-        .replaceAll(RegExp(r'```[\s\S]*?```'), ' ') // fenced code blocks
-        .replaceAll(RegExp(r'[#>*_`~\-\[\]()]'), ' ') // markdown tokens
+        // Block constructs: drop them whole, they don't read as prose.
+        .replaceAll(RegExp(r'```[\s\S]*?```'), ' ') // fenced code
+        .replaceAll(RegExp(r'!\[[^\]]*\]\([^)]*\)'), ' ') // images
+        // Links: keep the text, drop the target.
+        .replaceAllMapped(
+            RegExp(r'\[([^\]]*)\]\([^)]*\)'), (m) => m.group(1)!)
+        // Line-leading markers: headings, quotes, bullets, ordered items.
+        .replaceAll(RegExp(r'^[ \t]*(#{1,6}|>|[-*+]|\d+\.)[ \t]+', multiLine: true), '')
+        // Horizontal rules.
+        .replaceAll(RegExp(r'^[ \t]*([-*_])\1{2,}[ \t]*$', multiLine: true), ' ')
+        // Inline code: unwrap, keeping what's inside the backticks.
+        .replaceAllMapped(RegExp(r'`([^`]+)`'), (m) => m.group(1)!)
+        // Emphasis: unwrap ** __ * _ pairs. The underscore forms require a
+        // non-word character on each side, so go_router is left alone.
+        .replaceAllMapped(
+            RegExp(r'\*{1,3}(\S(?:.*?\S)?)\*{1,3}'), (m) => m.group(1)!)
+        .replaceAllMapped(
+            RegExp(r'(?<![A-Za-z0-9])_{1,3}(\S(?:.*?\S)?)_{1,3}(?![A-Za-z0-9])'),
+            (m) => m.group(1)!)
         .replaceAll(RegExp(r'\s+'), ' ')
+        // Unwrapping can strand a space in front of punctuation ("content ,").
+        .replaceAll(RegExp(r' +([,.;:!?])'), r'$1')
         .trim();
-    if (plain.length <= 140) return plain;
-    return '${plain.substring(0, 140).trimRight()}…';
+
+    if (plain.length <= _excerptMaxLength) return plain;
+    return '${plain.substring(0, _excerptMaxLength).trimRight()}…';
   }
 
   /// Estimated reading time in whole minutes (~200 words/minute, min 1).

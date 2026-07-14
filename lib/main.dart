@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'data/repositories/post_repository.dart';
 import 'routing/router.dart';
 import 'ui/core/theme.dart';
+import 'ui/core/theme_controller.dart';
 import 'ui/features/feed/view_models/feed_view_model.dart';
 
 void main() {
@@ -30,14 +31,19 @@ class InkflowApp extends StatelessWidget {
         ChangeNotifierProvider<FeedViewModel>(
           create: (context) => FeedViewModel(context.read<PostRepository>()),
         ),
+        ChangeNotifierProvider<ThemeController>(
+          create: (_) => ThemeController(),
+        ),
       ],
-      child: MaterialApp.router(
-        title: 'Inkflow',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        routerConfig: router,
+      child: Consumer<ThemeController>(
+        builder: (context, themeController, _) => MaterialApp.router(
+          title: 'InkFlow',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeController.themeMode,
+          routerConfig: router,
+        ),
       ),
     );
   }

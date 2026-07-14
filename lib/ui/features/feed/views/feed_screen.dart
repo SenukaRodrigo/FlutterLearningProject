@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../domain/models/post.dart';
 import '../../../core/author_avatar.dart';
+import '../../../core/theme_controller.dart';
 import '../view_models/feed_view_model.dart';
 
 /// Above this width the feed lays posts out as a grid instead of a single
@@ -106,6 +107,7 @@ class _FeedScreenState extends State<FeedScreen> {
             tooltip: _isSearching ? 'Close search' : 'Search',
             onPressed: _toggleSearch,
           ),
+          const _ThemeToggle(),
         ],
         bottom: viewModel.allTags.isEmpty
             ? null
@@ -131,6 +133,23 @@ class _FeedScreenState extends State<FeedScreen> {
                 : _PostList(posts: viewModel.posts),
           ),
       },
+    );
+  }
+}
+
+class _ThemeToggle extends StatelessWidget {
+  const _ThemeToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<ThemeController>();
+    final isDark = controller.isDark(context);
+
+    return IconButton(
+      key: const ValueKey('theme-toggle'),
+      icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+      tooltip: isDark ? 'Switch to light theme' : 'Switch to dark theme',
+      onPressed: () => controller.toggle(context),
     );
   }
 }
