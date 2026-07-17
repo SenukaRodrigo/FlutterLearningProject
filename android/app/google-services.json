@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "922757808640",
+    "project_id": "inkflow-blog-8c4996",
+    "storage_bucket": "inkflow-blog-8c4996.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:922757808640:android:cf9afab73428de7647cee5",
+        "android_client_info": {
+          "package_name": "com.senuka.inkflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-zevtPwiI-NAlXezCIVHf80KBcctuwYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

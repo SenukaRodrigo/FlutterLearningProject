@@ -1,14 +1,25 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 
 import 'data/repositories/post_repository.dart';
+import 'firebase_options.dart';
 import 'routing/router.dart';
 import 'ui/core/theme.dart';
 import 'ui/core/theme_controller.dart';
 import 'ui/features/feed/view_models/feed_view_model.dart';
 
-void main() {
+Future<void> main() async {
+  // Required before any plugin work runs ahead of runApp.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase is initialized but not yet used: the app still reads from
+  // MockPostRepository. Connecting it comes with the backend phase.
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // Clean, hash-free URLs on the web so deep links look like /post/1.
   usePathUrlStrategy();
   runApp(const InkflowApp());
