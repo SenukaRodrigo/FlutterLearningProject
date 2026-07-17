@@ -1,8 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'data/repositories/auth_repository.dart';
 import 'data/repositories/post_repository.dart';
 import 'firebase_options.dart';
 import 'routing/router.dart';
@@ -14,25 +16,42 @@ Future<void> main() async {
   // Required before any plugin work runs ahead of runApp.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase is initialized but not yet used: the app still reads from
-  // MockPostRepository. Connecting it comes with the backend phase.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  final authRepository = FirebaseAuthRepository();
+
+  // Firebase restores a persisted session asynchronously, so currentUser is
+  // briefly null even for a signed-in user. Waiting for the first auth event
+  // means the router's first redirect sees the settled state, instead of
+  // bouncing a signed-in user to /login for a frame.
+  await authRepository.currentUser.first;
+
   // Clean, hash-free URLs on the web so deep links look like /post/1.
   usePathUrlStrategy();
-  runApp(const InkflowApp());
+  runApp(InkflowApp(authRepository: authRepository));
 }
 
 /// Root of the Inkflow application.
-class InkflowApp extends StatelessWidget {
-  const InkflowApp({super.key});
+class InkflowApp extends StatefulWidget {
+  const InkflowApp({super.key, required this.authRepository});
+
+  final AuthRepository authRepository;
+
+  @override
+  State<InkflowApp> createState() => _InkflowAppState();
+}
+
+class _InkflowAppState extends State<InkflowApp> {
+  /// Built once: a GoRouter rebuilt on every frame would drop its history.
+  late final GoRouter _router = createRouter(widget.authRepository);
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<AuthRepository>.value(value: widget.authRepository),
         Provider<PostRepository>(
           create: (_) => MockPostRepository(),
           dispose: (_, repository) => repository.dispose(),
@@ -53,7 +72,7 @@ class InkflowApp extends StatelessWidget {
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: themeController.themeMode,
-          routerConfig: router,
+          routerConfig: _router,
         ),
       ),
     );

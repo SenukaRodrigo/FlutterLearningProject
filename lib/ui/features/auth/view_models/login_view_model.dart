@@ -1,14 +1,16 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../../data/repositories/auth_repository.dart';
+
 /// Whether the auth form signs an existing user in or creates a new account.
 enum AuthMode { login, signup }
 
 /// Presentation state for the auth screen.
-///
-/// Authentication itself is not wired up yet: [submit] fakes a round trip so
-/// the UI can be built and tested. See the TODO in [submit] for where Firebase
-/// Auth plugs in during the backend phase.
 class LoginViewModel extends ChangeNotifier {
+  LoginViewModel(this._repository);
+
+  final AuthRepository _repository;
+
   AuthMode _mode = AuthMode.login;
   AuthMode get mode => _mode;
 
@@ -71,7 +73,11 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Signs in or registers, returning whether it succeeded.
+  /// Signs in or registers, returning whether it succeeded. On failure
+  /// [errorMessage] carries something worth showing the user.
+  ///
+  /// Navigation is left to the router's redirect, which is watching auth state:
+  /// this only reports the outcome.
   Future<bool> submit() async {
     if (!isValid || _isSubmitting) return false;
 
@@ -80,17 +86,15 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO(backend): replace with Firebase Auth. This is the only place the
-      // screen touches authentication, so swapping it in means calling
-      //
-      //   isLogin
-      //     ? FirebaseAuth.instance.signInWithEmailAndPassword(...)
-      //     : FirebaseAuth.instance.createUserWithEmailAndPassword(...)
-      //
-      // and mapping FirebaseAuthException.code onto _errorMessage. The router
-      // will also need a redirect guarding the shell routes on authState.
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (isLogin) {
+        await _repository.signIn(email: _email, password: _password);
+      } else {
+        await _repository.signUp(email: _email, password: _password);
+      }
       return true;
+    } on AuthException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (_) {
       _errorMessage = 'Something went wrong. Try again.';
       return false;

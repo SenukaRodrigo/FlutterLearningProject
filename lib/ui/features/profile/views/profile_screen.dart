@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../data/repositories/auth_repository.dart';
 import '../../../../data/repositories/post_repository.dart';
 import '../../../../domain/models/post.dart';
 import '../../../core/author_avatar.dart';
@@ -33,9 +34,12 @@ class _ProfileView extends StatelessWidget {
         title: const Text('Profile'),
         actions: [
           IconButton(
-            tooltip: 'Log out',
+            key: const ValueKey('sign-out-button'),
+            tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
-            onPressed: () => context.go('/login'),
+            // No navigation here: signing out changes auth state, and the
+            // router's redirect takes it from there.
+            onPressed: () => context.read<AuthRepository>().signOut(),
           ),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../data/repositories/auth_repository.dart';
 import '../view_models/login_view_model.dart';
 
 /// Widest the form grows on a desktop window.
@@ -14,7 +14,7 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => LoginViewModel(),
+      create: (context) => LoginViewModel(context.read<AuthRepository>()),
       child: const _LoginView(),
     );
   }
@@ -38,11 +38,9 @@ class _LoginViewState extends State<_LoginView> {
     setState(() => _showErrors = true);
     if (!viewModel.isValid) return;
 
-    if (await viewModel.submit() && mounted) {
-      // Replaces the stack rather than pushing: once signed in, Back should not
-      // return to the login form.
-      GoRouter.of(context).go('/');
-    }
+    // No navigation here: the router redirects off /login as soon as the auth
+    // state changes, so doing it here too would race with that.
+    await viewModel.submit();
   }
 
   @override

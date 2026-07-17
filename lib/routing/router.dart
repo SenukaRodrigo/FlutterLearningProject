@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../data/repositories/auth_repository.dart';
 import '../data/repositories/post_repository.dart';
 import '../ui/core/scaffold_with_nav_bar.dart';
 import '../ui/features/auth/views/login_screen.dart';
@@ -14,65 +17,102 @@ import '../ui/features/profile/views/profile_screen.dart';
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
-/// The app's route tree.
+/// Adapts a [Stream] into the [Listenable] `go_router` wants, so the redirect
+/// re-runs whenever auth state changes.
+class _StreamListenable extends ChangeNotifier {
+  _StreamListenable(Stream<dynamic> stream) {
+    // notifyListeners() up front so the first redirect runs against whatever
+    // the stream has already emitted.
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+/// Builds the app's route tree.
 ///
 /// A [StatefulShellRoute] hosts the bottom-nav tabs (Feed, Write, Profile),
 /// while `/login` and the deep-linkable `/post/:id` live outside the shell so
 /// they render full-screen without the navigation bar.
-final GoRouter router = GoRouter(
-  navigatorKey: _rootNavigatorKey,
-  initialLocation: '/',
-  routes: [
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) =>
-          ScaffoldWithNavBar(navigationShell: navigationShell),
-      branches: [
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => const FeedScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/write',
-              builder: (context, state) => const EditorScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/profile',
-              builder: (context, state) => const ProfileScreen(),
-            ),
-          ],
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/post/:id',
-      builder: (context, state) => ChangeNotifierProvider(
-        // Keyed by id so navigating between posts builds a fresh view model
-        // rather than reusing the previous post's state.
-        key: ValueKey(state.pathParameters['id']),
-        create: (context) => PostDetailViewModel(
-          context.read<PostRepository>(),
-          state.pathParameters['id']!,
-        ),
-        child: const PostDetailScreen(),
+///
+/// Takes [authRepository] rather than reading a global, so tests can build a
+/// router against a fake.
+GoRouter createRouter(AuthRepository authRepository) {
+  return GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    initialLocation: '/',
+    refreshListenable: _StreamListenable(authRepository.currentUser),
+    redirect: (context, state) {
+      final isSignedIn = authRepository.currentAuthor != null;
+      final isOnLogin = state.matchedLocation == '/login';
+
+      // Signed out: everything funnels to the login form.
+      if (!isSignedIn) return isOnLogin ? null : '/login';
+
+      // Signed in: the login form has nothing left to offer.
+      if (isOnLogin) return '/';
+
+      return null;
+    },
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            ScaffoldWithNavBar(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const FeedScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/write',
+                builder: (context, state) => const EditorScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/post/:id',
+        builder: (context, state) => ChangeNotifierProvider(
+          // Keyed by id so navigating between posts builds a fresh view model
+          // rather than reusing the previous post's state.
+          key: ValueKey(state.pathParameters['id']),
+          create: (context) => PostDetailViewModel(
+            context.read<PostRepository>(),
+            state.pathParameters['id']!,
+          ),
+          child: const PostDetailScreen(),
+        ),
+      ),
+    ],
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(),
+      body: Center(child: Text('Page not found: ${state.uri}')),
     ),
-  ],
-  errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(),
-    body: Center(child: Text('Page not found: ${state.uri}')),
-  ),
-);
+  );
+}
